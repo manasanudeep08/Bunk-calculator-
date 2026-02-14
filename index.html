@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,14 +11,16 @@
   --card: #ffffff;
   --text: #1d1d1f;
   --border: #e5e5ea;
+  --accent: #0071e3;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #000000;
+    --bg: #000;
     --card: #1c1c1e;
-    --text: #ffffff;
+    --text: #fff;
     --border: #2c2c2e;
+    --accent: #0a84ff;
   }
 }
 
@@ -41,9 +43,8 @@ body {
   box-shadow: 0 20px 50px rgba(0,0,0,0.08);
 }
 
-h1 {
+h2 {
   text-align: center;
-  font-size: 22px;
 }
 
 input {
@@ -54,6 +55,18 @@ input {
   border: 1px solid var(--border);
   background: transparent;
   color: var(--text);
+}
+
+button {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+  margin-top: 10px;
+  cursor: pointer;
 }
 
 .grid {
@@ -71,6 +84,7 @@ input {
 .result {
   margin-top: 20px;
   font-size: 14px;
+  line-height: 1.6;
 }
 </style>
 </head>
@@ -78,38 +92,32 @@ input {
 <body>
 
 <div class="card">
-<h1>Bunk</h1>
+<h2>Bunk Calculator</h2>
 
 <input type="text" id="subject" placeholder="Subject Name">
 <input type="number" id="required" placeholder="Required % (default 85)">
+<input type="number" id="attendance" placeholder="Current Attendance %">
 
 <div class="grid">
-
-<div class="component">
-<b>L</b>
-<input type="number" placeholder="Total" id="L_total">
-<input type="number" placeholder="Attendance %" id="L_percent">
+  <div class="component">
+    <b>L per week</b>
+    <input type="number" id="L">
+  </div>
+  <div class="component">
+    <b>T per week</b>
+    <input type="number" id="T">
+  </div>
+  <div class="component">
+    <b>P per week</b>
+    <input type="number" id="P">
+  </div>
+  <div class="component">
+    <b>S per week</b>
+    <input type="number" id="S">
+  </div>
 </div>
 
-<div class="component">
-<b>T</b>
-<input type="number" placeholder="Total" id="T_total">
-<input type="number" placeholder="Attendance %" id="T_percent">
-</div>
-
-<div class="component">
-<b>P</b>
-<input type="number" placeholder="Total" id="P_total">
-<input type="number" placeholder="Attendance %" id="P_percent">
-</div>
-
-<div class="component">
-<b>S</b>
-<input type="number" placeholder="Total" id="S_total">
-<input type="number" placeholder="Attendance %" id="S_percent">
-</div>
-
-</div>
+<button onclick="calculate()">Calculate</button>
 
 <div class="result" id="result"></div>
 
@@ -117,32 +125,48 @@ input {
 
 <script>
 
-const inputs = document.querySelectorAll("input");
-inputs.forEach(i => i.addEventListener("input", calculate));
+const WORKING_DAYS = 50;   // till April 18
+const DAYS_PER_WEEK = 6;   // excluding Sundays
 
 function calculate() {
-  const required = parseFloat(document.getElementById("required").value) || 85;
-  const subject = document.getElementById("subject").value || "Subject";
+
+  let required = parseFloat(document.getElementById("required").value) || 85;
+  let currentPercent = parseFloat(document.getElementById("attendance").value);
+  let subject = document.getElementById("subject").value || "Subject";
+
+  if (!currentPercent) {
+    alert("Enter current attendance %");
+    return;
+  }
 
   let components = ["L","T","P","S"];
   let output = "<b>" + subject + "</b><br>";
 
   components.forEach(c => {
-    let total = parseFloat(document.getElementById(c+"_total").value);
-    let percent = parseFloat(document.getElementById(c+"_percent").value);
 
-    if (total && percent) {
-      let attended = (percent/100) * total;
+    let perWeek = parseFloat(document.getElementById(c).value);
+
+    if (perWeek && perWeek > 0) {
+
+      let totalClasses = (WORKING_DAYS / DAYS_PER_WEEK) * perWeek;
+      totalClasses = Math.floor(totalClasses);
+
+      let attended = (currentPercent / 100) * totalClasses;
+
       let maxBunks = Math.floor(
-        (attended - (required/100 * total)) / (required/100)
+        (attended - (required/100 * totalClasses)) / (required/100)
       );
 
-      if (maxBunks < 0) {
-        output += c + ": No bunks left<br>";
-      } else {
-        output += c + ": " + maxBunks + " bunks left<br>";
-      }
+      if (maxBunks < 0) maxBunks = 0;
+
+      let finalPercent = (attended / (totalClasses + maxBunks)) * 100;
+
+      output += "<br><b>" + c + "</b><br>";
+      output += "Total Classes: " + totalClasses + "<br>";
+      output += "Safe Bunks: " + maxBunks + "<br>";
+      output += "Final % if max bunk: " + finalPercent.toFixed(2) + "%<br>";
     }
+
   });
 
   document.getElementById("result").innerHTML = output;
