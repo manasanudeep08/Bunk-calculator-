@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bunk</title>
+
+<style>
+:root {
+  --bg: #f5f5f7;
+  --card: #ffffff;
+  --text: #1d1d1f;
+  --border: #e5e5ea;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --card: #1c1c1e;
+    --text: #ffffff;
+    --border: #2c2c2e;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+  padding: 40px 15px;
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--card);
+  padding: 28px;
+  border-radius: 22px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+}
+
+h1 {
+  text-align: center;
+  font-size: 22px;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  margin: 6px 0 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.component {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.result {
+  margin-top: 20px;
+  font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h1>Bunk</h1>
+
+<input type="text" id="subject" placeholder="Subject Name">
+<input type="number" id="required" placeholder="Required % (default 85)">
+
+<div class="grid">
+
+<div class="component">
+<b>L</b>
+<input type="number" placeholder="Total" id="L_total">
+<input type="number" placeholder="Attendance %" id="L_percent">
+</div>
+
+<div class="component">
+<b>T</b>
+<input type="number" placeholder="Total" id="T_total">
+<input type="number" placeholder="Attendance %" id="T_percent">
+</div>
+
+<div class="component">
+<b>P</b>
+<input type="number" placeholder="Total" id="P_total">
+<input type="number" placeholder="Attendance %" id="P_percent">
+</div>
+
+<div class="component">
+<b>S</b>
+<input type="number" placeholder="Total" id="S_total">
+<input type="number" placeholder="Attendance %" id="S_percent">
+</div>
+
+</div>
+
+<div class="result" id="result"></div>
+
+</div>
+
+<script>
+
+const inputs = document.querySelectorAll("input");
+inputs.forEach(i => i.addEventListener("input", calculate));
+
+function calculate() {
+  const required = parseFloat(document.getElementById("required").value) || 85;
+  const subject = document.getElementById("subject").value || "Subject";
+
+  let components = ["L","T","P","S"];
+  let output = "<b>" + subject + "</b><br>";
+
+  components.forEach(c => {
+    let total = parseFloat(document.getElementById(c+"_total").value);
+    let percent = parseFloat(document.getElementById(c+"_percent").value);
+
+    if (total && percent) {
+      let attended = (percent/100) * total;
+      let maxBunks = Math.floor(
+        (attended - (required/100 * total)) / (required/100)
+      );
+
+      if (maxBunks < 0) {
+        output += c + ": No bunks left<br>";
+      } else {
+        output += c + ": " + maxBunks + " bunks left<br>";
+      }
+    }
+  });
+
+  document.getElementById("result").innerHTML = output;
+}
+
+</script>
+
+</body>
+</html>
