@@ -163,9 +163,9 @@ function calculate() {
       let remaining = totalSemester - conducted;
       if (remaining < 0) remaining = 0;
 
-      let attendedTillNow = (percent / 100) * conducted;
+      let attendedTillNow = (percent/100) * conducted;
 
-      // Safe bunks formula
+      // Safe bunks from remaining
       let maxBunks = Math.floor(
         (attendedTillNow + remaining) - (required/100 * totalSemester)
       );
@@ -182,7 +182,6 @@ function calculate() {
       output += "Safe Bunks: " + maxBunks + "<br>";
       output += "Final % if max bunk: " + finalPercentMax.toFixed(2) + "%<br>";
 
-      // Predictor
       if (predict >= 0) {
 
         if (predict > remaining) predict = remaining;
@@ -190,9 +189,10 @@ function calculate() {
         let finalPredict =
           ((attendedTillNow + remaining - predict) / totalSemester) * 100;
 
-        output += "If you bunk " + predict + 
+        output += "If you bunk " + predict +
                   " → Final %: " + finalPredict.toFixed(2) + "%<br>";
       }
+
     }
 
   });
