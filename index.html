@@ -3,205 +3,146 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Attendance Glass</title>
+<title>Attendance Engine</title>
 
 <style>
-* {
-  box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-}
-
 body {
-  margin: 0;
-  min-height: 100vh;
-  background: radial-gradient(circle at 20% 30%, #6366f1 0%, transparent 40%),
-              radial-gradient(circle at 80% 70%, #8b5cf6 0%, transparent 40%),
-              linear-gradient(135deg, #0f172a, #111827);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: white;
-  overflow: hidden;
+  background:#0f172a;
+  color:white;
+  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+  padding:30px;
 }
-
-/* Glass Card */
-.card {
-  width: 95%;
-  max-width: 520px;
-  padding: 30px;
-  border-radius: 30px;
-  backdrop-filter: blur(40px);
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.2);
-  box-shadow: 0 40px 120px rgba(0,0,0,0.7);
-  animation: fadeIn 0.6s ease;
+input,select,button{
+  padding:10px;
+  margin:5px 0;
+  border-radius:8px;
+  border:none;
 }
-
-@keyframes fadeIn {
-  from {opacity:0; transform: translateY(20px);}
-  to {opacity:1; transform: translateY(0);}
-}
-
-h1 {
-  text-align: center;
-  margin-bottom: 5px;
-}
-
-.subtitle {
-  text-align: center;
-  font-size: 14px;
-  opacity: 0.7;
-  margin-bottom: 20px;
-}
-
-select, input {
-  width: 100%;
-  padding: 13px;
-  margin-bottom: 12px;
-  border-radius: 16px;
-  border: none;
-  background: rgba(255,255,255,0.1);
-  color: white;
-  outline: none;
-}
-
-button {
-  width: 100%;
-  padding: 14px;
-  border-radius: 18px;
-  border: none;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-button:hover {
-  transform: scale(1.03);
-}
-
-.result {
-  margin-top: 20px;
-  padding: 18px;
-  border-radius: 20px;
-  background: rgba(255,255,255,0.1);
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.safe { border: 1px solid rgba(0,255,150,0.6); }
-.warn { border: 1px solid rgba(255,180,0,0.6); }
-.danger { border: 1px solid rgba(255,60,60,0.7); }
-
+button{background:#6366f1;color:white;cursor:pointer;}
+pre{background:#1e293b;padding:15px;border-radius:10px;}
 </style>
 </head>
 
 <body>
 
-<div class="card">
-<h1>Hello vro 👋</h1>
-<div class="subtitle">Choose your subject</div>
+<h2>Phase 1 Engine</h2>
 
-<select id="subject" onchange="loadSubject()">
-  <option value="">-- Select Subject --</option>
+<select id="subject">
   <option value="ds">Data Structures</option>
   <option value="python">Python</option>
   <option value="la">Linear Algebra</option>
   <option value="dtw">Design Tools</option>
   <option value="coa">COA</option>
-  <option value="iot">IoT & Sensors</option>
+  <option value="iot">IoT</option>
   <option value="comm">Communication</option>
 </select>
 
-<div id="inputs"></div>
+<br>
+<label>Select Date:</label>
+<input type="date" id="selectedDate">
 
-<button onclick="calculate()">Calculate</button>
+<br>
+<button onclick="runEngine()">Run Engine</button>
 
-<div class="result" id="result"></div>
-</div>
+<pre id="output"></pre>
 
 <script>
 
-const data = {
-  ds: { L:46, P:30, S:58 },
-  python: { L:32, P:32 },
-  la: { T:28, S:30 },
-  dtw: { P:60 },
-  coa: { L:46 },
-  iot: { L:28, P:28 },
-  comm: { P:62 }
-};
+const semesterStart = new Date("2025-12-22");
+const semesterEnd = new Date("2026-04-18");
 
-const weights = { L:1, P:0.5, T:0.25, S:0.25 };
+// Holidays (yyyy-mm-dd)
+const holidays = [
+  "2026-01-12","2026-01-13","2026-01-14",
+  "2026-01-15","2026-01-16","2026-01-17",
+  "2026-03-19","2026-03-21",
+  "2026-03-27","2026-04-14"
+];
 
-function loadSubject() {
-  let subject = document.getElementById("subject").value;
-  let container = document.getElementById("inputs");
-  container.innerHTML = "";
+function isHoliday(date){
+  return holidays.includes(date.toISOString().split("T")[0]);
+}
 
-  if (!subject) return;
-
-  let components = data[subject];
-
-  for (let comp in components) {
-    container.innerHTML += 
-      `<input type="number" id="${comp}" placeholder="${comp} Attendance %">`;
+// Weekday timetable mapping
+function getClassesForDay(day){
+  switch(day){
+    case 1: return { ds:{S:2}, python:{L:2}, comm:{P:2} }; // Monday
+    case 2: return { ds:{S:2}, comm:{P:2} }; // Tuesday
+    case 3: return { iot:{L:2}, ds:{L:2}, dtw:{P:2} }; // Wednesday
+    case 4: return { iot:{P:2}, la:{S:2}, dtw:{P:2} }; // Thursday
+    case 5: return { la:{T:2}, ds:{P:2}, coa:{L:2} }; // Friday
+    case 6: return { coa:{L:1}, python:{P:2}, ds:{L:1} }; // Saturday
+    default: return {}; // Sunday
   }
 }
 
-function calculate() {
+function countClasses(untilDate){
 
-  let subject = document.getElementById("subject").value;
-  if (!subject) return;
+  let counts = {};
 
-  let components = data[subject];
+  let current = new Date(semesterStart);
 
-  let weightedTotal = 0;
-  let weightedAttended = 0;
+  while(current <= untilDate){
 
-  for (let comp in components) {
+    if(current.getDay() !== 0 && !isHoliday(current)){
 
-    let total = components[comp];
-    let percentInput = document.getElementById(comp).value;
+      let dayMap = getClassesForDay(current.getDay());
 
-    if (percentInput === "") continue;  // ignore empty fields
+      for(let subject in dayMap){
 
-    let percent = parseFloat(percentInput);
-    let weight = weights[comp];
+        if(!counts[subject]) counts[subject] = {};
 
-    let attended = (percent/100) * total;
+        for(let comp in dayMap[subject]){
 
-    weightedTotal += total * weight;
-    weightedAttended += attended * weight;
+          if(!counts[subject][comp]) counts[subject][comp] = 0;
+
+          counts[subject][comp] += dayMap[subject][comp];
+        }
+      }
+    }
+
+    current.setDate(current.getDate() + 1);
   }
 
-  if (weightedTotal === 0) return;
+  return counts;
+}
 
-  let combined = (weightedAttended / weightedTotal) * 100;
-  let required = 0.85 * weightedTotal;
-  let margin = weightedAttended - required;
+function applyManualReductions(totals){
 
-  let safeLecture = Math.floor(margin / 1);
-  let safePractical = Math.floor(margin / 0.5);
-  let safeTutorial = Math.floor(margin / 0.25);
+  if(totals.ds?.S) totals.ds.S -= 4;
+  if(totals.iot?.L) totals.iot.L -= 2;
+  if(totals.iot?.P) totals.iot.P -= 2;
+  if(totals.la?.T) totals.la.T -= 2;
 
-  let box = document.getElementById("result");
+  return totals;
+}
 
-  let statusClass = "safe";
-  if (combined < 85) statusClass = "danger";
-  else if (combined < 88) statusClass = "warn";
+function runEngine(){
 
-  box.className = "result " + statusClass;
+  let subject = document.getElementById("subject").value;
+  let selectedDate = new Date(document.getElementById("selectedDate").value);
 
-  box.innerHTML = `
-    Combined Attendance: <b>${combined.toFixed(2)}%</b><br><br>
-    Margin Units: ${margin.toFixed(2)}<br><br>
-    You can still bunk approximately:<br>
-    Lectures: ${safeLecture}<br>
-    Practicals: ${safePractical}<br>
-    Tutorials/Skills: ${safeTutorial}
-  `;
+  if(!selectedDate) return;
+
+  if(selectedDate < semesterStart){
+    document.getElementById("output").innerText = "Semester not started.";
+    return;
+  }
+
+  if(selectedDate > semesterEnd){
+    selectedDate = new Date(semesterEnd);
+  }
+
+  let completed = countClasses(selectedDate);
+  let totalSemester = countClasses(semesterEnd);
+  totalSemester = applyManualReductions(totalSemester);
+
+  let result = "Completed till date:\n";
+  result += JSON.stringify(completed[subject] || {}, null, 2);
+  result += "\n\nTotal Semester:\n";
+  result += JSON.stringify(totalSemester[subject] || {}, null, 2);
+
+  document.getElementById("output").innerText = result;
 }
 
 </script>
