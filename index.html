@@ -10,8 +10,12 @@ const holidays = [
   "2026-03-27","2026-04-14"
 ];
 
+function formatDate(d){
+  return d.toISOString().split("T")[0];
+}
+
 function isHoliday(date){
-  return holidays.includes(date.toISOString().split("T")[0]);
+  return holidays.includes(formatDate(date));
 }
 
 function isExamWeek(date){
@@ -20,7 +24,6 @@ function isExamWeek(date){
   return date >= start && date <= end;
 }
 
-// Period-based timetable
 function getPeriods(day){
 
   switch(day){
@@ -91,9 +94,8 @@ function countClasses(untilDate){
 
     if(current.getDay() !== 0 && !isHoliday(current)){
 
-      let periods = getPeriods(current.getDay());
+      let periods = getPeriods(current.getDay()) || [];
 
-      // Remove first 2 periods if exam week
       if(isExamWeek(current)){
         periods = periods.slice(2);
       }
@@ -116,11 +118,23 @@ function countClasses(untilDate){
 
 function calculate(){
 
-  let subject = document.getElementById("subject").value;
-  let selectedDate = new Date(document.getElementById("selectedDate").value);
+  const subject = document.getElementById("subject").value;
+  const dateValue = document.getElementById("selectedDate").value;
 
-  if(!selectedDate || selectedDate < semesterStart){
-    document.getElementById("result").innerHTML = "Select valid date.";
+  if(!dateValue){
+    document.getElementById("result").innerHTML = "Please select a date.";
+    return;
+  }
+
+  let selectedDate = new Date(dateValue);
+
+  if(isNaN(selectedDate)){
+    document.getElementById("result").innerHTML = "Invalid date.";
+    return;
+  }
+
+  if(selectedDate < semesterStart){
+    document.getElementById("result").innerHTML = "Semester not started.";
     return;
   }
 
@@ -138,7 +152,7 @@ function calculate(){
 
   for(let comp in compTotal){
 
-    let attended = parseInt(document.getElementById(comp).value) || 0;
+    let attended = parseInt(document.getElementById(comp)?.value) || 0;
     let completedCount = compCompleted[comp] || 0;
     let totalCount = compTotal[comp];
 
