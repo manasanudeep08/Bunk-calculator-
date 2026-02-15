@@ -3,86 +3,57 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bunk</title>
+<title>Attendance Pro</title>
 
 <style>
-:root {
-  --bg: #f5f5f7;
-  --card: #ffffff;
-  --text: #1d1d1f;
-  --border: #e5e5ea;
-  --accent: #0071e3;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #000;
-    --card: #1c1c1e;
-    --text: #fff;
-    --border: #2c2c2e;
-    --accent: #0a84ff;
-  }
-}
-
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, Arial;
-  background: var(--bg);
-  color: var(--text);
+  background: #0f172a;
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
   display: flex;
   justify-content: center;
-  padding: 40px 15px;
+  padding: 30px;
 }
 
 .card {
   width: 100%;
-  max-width: 450px;
-  background: var(--card);
-  padding: 28px;
-  border-radius: 22px;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+  max-width: 500px;
 }
 
-h2 { text-align: center; }
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+}
 
 input {
   width: 100%;
   padding: 12px;
-  margin: 6px 0 12px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text);
+  margin-bottom: 10px;
+  border-radius: 10px;
+  border: none;
+  background: #1e293b;
+  color: white;
 }
 
 button {
   width: 100%;
   padding: 14px;
-  border-radius: 14px;
+  border-radius: 12px;
   border: none;
-  background: var(--accent);
+  background: #6366f1;
   color: white;
   font-weight: 600;
-  margin-top: 10px;
   cursor: pointer;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.component {
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  margin-top: 10px;
 }
 
 .result {
   margin-top: 20px;
+  background: #1e293b;
+  padding: 15px;
+  border-radius: 12px;
   font-size: 14px;
-  line-height: 1.6;
 }
 </style>
 </head>
@@ -90,117 +61,94 @@ button {
 <body>
 
 <div class="card">
-<h2>Bunk Calculator</h2>
+<h1>Combined Attendance</h1>
 
-<input type="text" id="subject" placeholder="Subject Name">
-<input type="number" id="required" placeholder="Required % (default 85)">
+<input type="number" id="dsL" placeholder="DS Lecture %">
+<input type="number" id="dsP" placeholder="DS Practical %">
+<input type="number" id="dsS" placeholder="DS Skill %">
 
-<div class="grid">
+<input type="number" id="pyL" placeholder="Python Lecture %">
+<input type="number" id="pyP" placeholder="Python Practical %">
 
-<div class="component">
-<b>L per week</b>
-<input type="number" id="L_week">
-<input type="number" placeholder="Conducted till now" id="L_done">
-<input type="number" placeholder="Current %" id="L_percent">
-<input type="number" placeholder="If I bunk next X" id="L_predict">
-</div>
+<input type="number" id="laT" placeholder="Linear Algebra Tutorial %">
+<input type="number" id="laS" placeholder="Linear Algebra Skill %">
 
-<div class="component">
-<b>T per week</b>
-<input type="number" id="T_week">
-<input type="number" placeholder="Conducted till now" id="T_done">
-<input type="number" placeholder="Current %" id="T_percent">
-<input type="number" placeholder="If I bunk next X" id="T_predict">
-</div>
+<input type="number" id="dtwP" placeholder="Design Tools Practical %">
 
-<div class="component">
-<b>P per week</b>
-<input type="number" id="P_week">
-<input type="number" placeholder="Conducted till now" id="P_done">
-<input type="number" placeholder="Current %" id="P_percent">
-<input type="number" placeholder="If I bunk next X" id="P_predict">
-</div>
+<input type="number" id="coaL" placeholder="COA Lecture %">
 
-<div class="component">
-<b>S per week</b>
-<input type="number" id="S_week">
-<input type="number" placeholder="Conducted till now" id="S_done">
-<input type="number" placeholder="Current %" id="S_percent">
-<input type="number" placeholder="If I bunk next X" id="S_predict">
-</div>
+<input type="number" id="iotL" placeholder="IoT Lecture %">
+<input type="number" id="iotP" placeholder="IoT Practical %">
 
-</div>
+<input type="number" id="commP" placeholder="Communication Practical %">
 
 <button onclick="calculate()">Calculate</button>
 
 <div class="result" id="result"></div>
-
 </div>
 
 <script>
 
-const WORKING_DAYS = 50;
-const DAYS_PER_WEEK = 6;
+// Fixed totals
+const totals = {
+  dsL:46, dsP:30, dsS:58,
+  pyL:32, pyP:32,
+  laT:28, laS:30,
+  dtwP:60,
+  coaL:46,
+  iotL:28, iotP:28,
+  commP:62
+};
+
+// Weights
+const weights = {
+  L:1,
+  P:0.5,
+  T:0.25,
+  S:0.25
+};
 
 function calculate() {
 
-  let required = parseFloat(document.getElementById("required").value) || 85;
-  let subject = document.getElementById("subject").value || "Subject";
+  let weightedTotal = 0;
+  let weightedAttended = 0;
 
-  let components = ["L","T","P","S"];
-  let output = "<b>" + subject + "</b><br>";
+  for (let key in totals) {
 
-  components.forEach(c => {
+    let percent = parseFloat(document.getElementById(key).value);
+    if (!percent) percent = 0;
 
-    let perWeek = parseFloat(document.getElementById(c+"_week").value);
-    let conducted = parseFloat(document.getElementById(c+"_done").value);
-    let percent = parseFloat(document.getElementById(c+"_percent").value);
-    let predict = parseFloat(document.getElementById(c+"_predict").value);
+    let totalClasses = totals[key];
 
-    if (perWeek && conducted && percent) {
+    let componentType = key.slice(-1); // L,P,T,S
+    let weight = weights[componentType];
 
-      let totalSemester = Math.floor((WORKING_DAYS / DAYS_PER_WEEK) * perWeek);
-      let remaining = totalSemester - conducted;
-      if (remaining < 0) remaining = 0;
+    let attended = (percent/100) * totalClasses;
 
-      let attendedTillNow = (percent / 100) * conducted;
+    weightedTotal += totalClasses * weight;
+    weightedAttended += attended * weight;
+  }
 
-      // Safe bunks formula
-      let maxBunks = Math.floor(
-        (attendedTillNow + remaining) - (required/100 * totalSemester)
-      );
+  let currentCombined = (weightedAttended / weightedTotal) * 100;
 
-      if (maxBunks > remaining) maxBunks = remaining;
-      if (maxBunks < 0) maxBunks = 0;
+  let requiredWeighted = 0.85 * weightedTotal;
+  let margin = weightedAttended - requiredWeighted;
 
-      let finalPercentMax =
-        ((attendedTillNow + remaining - maxBunks) / totalSemester) * 100;
+  let safeLectureBunks = Math.floor(margin / 1);
+  let safePracticalBunks = Math.floor(margin / 0.5);
+  let safeTutorialBunks = Math.floor(margin / 0.25);
 
-      output += "<br><b>" + c + "</b><br>";
-      output += "Total Semester: " + totalSemester + "<br>";
-      output += "Remaining: " + remaining + "<br>";
-      output += "Safe Bunks: " + maxBunks + "<br>";
-      output += "Final % if max bunk: " + finalPercentMax.toFixed(2) + "%<br>";
-
-      // Predictor
-      if (predict >= 0) {
-
-        if (predict > remaining) predict = remaining;
-
-        let finalPredict =
-          ((attendedTillNow + remaining - predict) / totalSemester) * 100;
-
-        output += "If you bunk " + predict + 
-                  " → Final %: " + finalPredict.toFixed(2) + "%<br>";
-      }
-    }
-
-  });
-
-  document.getElementById("result").innerHTML = output;
+  document.getElementById("result").innerHTML = `
+    Current Combined: <b>${currentCombined.toFixed(2)}%</b><br><br>
+    You can lose weighted units: ${margin.toFixed(2)}<br><br>
+    Equivalent Safe Bunks:<br>
+    Lectures: ${safeLectureBunks}<br>
+    Practicals: ${safePracticalBunks}<br>
+    Tutorials/Skills: ${safeTutorialBunks}
+  `;
 }
-
 </script>
 
 </body>
 </html>
+
