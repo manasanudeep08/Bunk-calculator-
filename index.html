@@ -3,29 +3,94 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Attendance Engine</title>
+<title>Attendance Pro</title>
 
 <style>
+* {
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+}
+
 body {
-  background:#0f172a;
-  color:white;
-  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-  padding:30px;
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at 20% 30%, #6366f1 0%, transparent 40%),
+              radial-gradient(circle at 80% 70%, #8b5cf6 0%, transparent 40%),
+              linear-gradient(135deg, #0f172a, #111827);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
 }
-input,select,button{
-  padding:10px;
-  margin:5px 0;
-  border-radius:8px;
-  border:none;
+
+.card {
+  width: 95%;
+  max-width: 550px;
+  padding: 30px;
+  border-radius: 30px;
+  backdrop-filter: blur(40px);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.2);
+  box-shadow: 0 40px 120px rgba(0,0,0,0.7);
 }
-button{background:#6366f1;color:white;cursor:pointer;}
-pre{background:#1e293b;padding:15px;border-radius:10px;}
+
+h1 {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  text-align: center;
+  opacity: 0.7;
+  margin-bottom: 20px;
+}
+
+select,input,button {
+  width: 100%;
+  padding: 13px;
+  margin-bottom: 12px;
+  border-radius: 16px;
+  border: none;
+  background: rgba(255,255,255,0.1);
+  color: white;
+  outline: none;
+}
+
+button {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+button:hover {
+  transform: scale(1.03);
+}
+
+.result {
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.1);
+  line-height: 1.6;
+}
+
+.safe { border: 1px solid rgba(0,255,150,0.6); }
+.danger { border: 1px solid rgba(255,60,60,0.7); }
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
 </style>
 </head>
 
 <body>
 
-<h2>Phase 1 Engine</h2>
+<div class="card">
+<h1>Hello vro 👋</h1>
+<div class="subtitle">Smart Attendance Tracker</div>
 
 <select id="subject">
   <option value="ds">Data Structures</option>
@@ -37,21 +102,25 @@ pre{background:#1e293b;padding:15px;border-radius:10px;}
   <option value="comm">Communication</option>
 </select>
 
-<br>
-<label>Select Date:</label>
 <input type="date" id="selectedDate">
 
-<br>
-<button onclick="runEngine()">Run Engine</button>
+<div class="grid">
+<input type="number" id="L" placeholder="Lectures Attended">
+<input type="number" id="P" placeholder="Practicals Attended">
+<input type="number" id="T" placeholder="Tutorials Attended">
+<input type="number" id="S" placeholder="Skills Attended">
+</div>
 
-<pre id="output"></pre>
+<button onclick="calculate()">Calculate</button>
+
+<div class="result" id="result"></div>
+</div>
 
 <script>
 
 const semesterStart = new Date("2025-12-22");
 const semesterEnd = new Date("2026-04-18");
 
-// Holidays (yyyy-mm-dd)
 const holidays = [
   "2026-01-12","2026-01-13","2026-01-14",
   "2026-01-15","2026-01-16","2026-01-17",
@@ -63,69 +132,53 @@ function isHoliday(date){
   return holidays.includes(date.toISOString().split("T")[0]);
 }
 
-// Weekday timetable mapping
 function getClassesForDay(day){
   switch(day){
-    case 1: return { ds:{S:2}, python:{L:2}, comm:{P:2} }; // Monday
-    case 2: return { ds:{S:2}, comm:{P:2} }; // Tuesday
-    case 3: return { iot:{L:2}, ds:{L:2}, dtw:{P:2} }; // Wednesday
-    case 4: return { iot:{P:2}, la:{S:2}, dtw:{P:2} }; // Thursday
-    case 5: return { la:{T:2}, ds:{P:2}, coa:{L:2} }; // Friday
-    case 6: return { coa:{L:1}, python:{P:2}, ds:{L:1} }; // Saturday
-    default: return {}; // Sunday
+    case 1: return { ds:{S:2}, python:{L:2}, comm:{P:2} };
+    case 2: return { ds:{S:2}, comm:{P:2} };
+    case 3: return { iot:{L:2}, ds:{L:2}, dtw:{P:2} };
+    case 4: return { iot:{P:2}, la:{S:2}, dtw:{P:2} };
+    case 5: return { la:{T:2}, ds:{P:2}, coa:{L:2} };
+    case 6: return { coa:{L:1}, python:{P:2}, ds:{L:1} };
+    default: return {};
   }
 }
 
 function countClasses(untilDate){
-
   let counts = {};
-
   let current = new Date(semesterStart);
 
   while(current <= untilDate){
-
     if(current.getDay() !== 0 && !isHoliday(current)){
-
       let dayMap = getClassesForDay(current.getDay());
-
       for(let subject in dayMap){
-
         if(!counts[subject]) counts[subject] = {};
-
         for(let comp in dayMap[subject]){
-
           if(!counts[subject][comp]) counts[subject][comp] = 0;
-
           counts[subject][comp] += dayMap[subject][comp];
         }
       }
     }
-
-    current.setDate(current.getDate() + 1);
+    current.setDate(current.getDate()+1);
   }
-
   return counts;
 }
 
 function applyManualReductions(totals){
-
   if(totals.ds?.S) totals.ds.S -= 4;
   if(totals.iot?.L) totals.iot.L -= 2;
   if(totals.iot?.P) totals.iot.P -= 2;
   if(totals.la?.T) totals.la.T -= 2;
-
   return totals;
 }
 
-function runEngine(){
+function calculate(){
 
   let subject = document.getElementById("subject").value;
   let selectedDate = new Date(document.getElementById("selectedDate").value);
 
-  if(!selectedDate) return;
-
-  if(selectedDate < semesterStart){
-    document.getElementById("output").innerText = "Semester not started.";
+  if(!selectedDate || selectedDate < semesterStart){
+    document.getElementById("result").innerHTML = "Select valid date.";
     return;
   }
 
@@ -134,15 +187,34 @@ function runEngine(){
   }
 
   let completed = countClasses(selectedDate);
-  let totalSemester = countClasses(semesterEnd);
-  totalSemester = applyManualReductions(totalSemester);
+  let totals = applyManualReductions(countClasses(semesterEnd));
 
-  let result = "Completed till date:\n";
-  result += JSON.stringify(completed[subject] || {}, null, 2);
-  result += "\n\nTotal Semester:\n";
-  result += JSON.stringify(totalSemester[subject] || {}, null, 2);
+  let compCompleted = completed[subject] || {};
+  let compTotal = totals[subject] || {};
 
-  document.getElementById("output").innerText = result;
+  let output = "";
+  let box = document.getElementById("result");
+
+  for(let comp in compTotal){
+
+    let attended = parseInt(document.getElementById(comp).value) || 0;
+    let completedCount = compCompleted[comp] || 0;
+    let totalCount = compTotal[comp];
+
+    let percent = completedCount ? (attended / completedCount) * 100 : 0;
+
+    let minRequired = 0.85 * totalCount;
+    let safeBunks = Math.floor(totalCount - minRequired - (completedCount - attended));
+
+    output += `<b>${comp}</b><br>
+    Completed: ${completedCount}<br>
+    Total Semester: ${totalCount}<br>
+    Current %: ${percent.toFixed(2)}%<br>
+    Safe Future Bunks: ${safeBunks > 0 ? safeBunks : 0}<br><br>`;
+  }
+
+  box.className = "result";
+  box.innerHTML = output;
 }
 
 </script>
