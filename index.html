@@ -13,35 +13,52 @@
 
 body {
   margin: 0;
-  background: linear-gradient(135deg, #0f172a, #1e293b);
+  min-height: 100vh;
+  background: radial-gradient(circle at 20% 30%, #6366f1 0%, transparent 40%),
+              radial-gradient(circle at 80% 70%, #8b5cf6 0%, transparent 40%),
+              linear-gradient(135deg, #0f172a, #111827);
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
   color: white;
+  overflow: hidden;
 }
 
+/* Glass Card */
 .card {
   width: 95%;
-  max-width: 500px;
-  padding: 28px;
-  border-radius: 28px;
-  backdrop-filter: blur(30px);
+  max-width: 520px;
+  padding: 30px;
+  border-radius: 30px;
+  backdrop-filter: blur(40px);
   background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.15);
-  box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.2);
+  box-shadow: 0 40px 120px rgba(0,0,0,0.7);
+  animation: fadeIn 0.6s ease;
+}
+
+@keyframes fadeIn {
+  from {opacity:0; transform: translateY(20px);}
+  to {opacity:1; transform: translateY(0);}
 }
 
 h1 {
   text-align: center;
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 14px;
+  opacity: 0.7;
   margin-bottom: 20px;
 }
 
 select, input {
   width: 100%;
-  padding: 12px;
+  padding: 13px;
   margin-bottom: 12px;
-  border-radius: 14px;
+  border-radius: 16px;
   border: none;
   background: rgba(255,255,255,0.1);
   color: white;
@@ -51,7 +68,7 @@ select, input {
 button {
   width: 100%;
   padding: 14px;
-  border-radius: 16px;
+  border-radius: 18px;
   border: none;
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
   color: white;
@@ -67,7 +84,7 @@ button:hover {
 .result {
   margin-top: 20px;
   padding: 18px;
-  border-radius: 18px;
+  border-radius: 20px;
   background: rgba(255,255,255,0.1);
   font-size: 14px;
   line-height: 1.6;
@@ -76,16 +93,18 @@ button:hover {
 .safe { border: 1px solid rgba(0,255,150,0.6); }
 .warn { border: 1px solid rgba(255,180,0,0.6); }
 .danger { border: 1px solid rgba(255,60,60,0.7); }
+
 </style>
 </head>
 
 <body>
 
 <div class="card">
-<h1>Subject Attendance</h1>
+<h1>Hello vro 👋</h1>
+<div class="subtitle">Choose your subject</div>
 
 <select id="subject" onchange="loadSubject()">
-  <option value="">Select Subject</option>
+  <option value="">-- Select Subject --</option>
   <option value="ds">Data Structures</option>
   <option value="python">Python</option>
   <option value="la">Linear Algebra</option>
@@ -100,12 +119,10 @@ button:hover {
 <button onclick="calculate()">Calculate</button>
 
 <div class="result" id="result"></div>
-
 </div>
 
 <script>
 
-// Totals + Weights
 const data = {
   ds: { L:46, P:30, S:58 },
   python: { L:32, P:32 },
@@ -146,7 +163,11 @@ function calculate() {
   for (let comp in components) {
 
     let total = components[comp];
-    let percent = parseFloat(document.getElementById(comp).value) || 0;
+    let percentInput = document.getElementById(comp).value;
+
+    if (percentInput === "") continue;  // ignore empty fields
+
+    let percent = parseFloat(percentInput);
     let weight = weights[comp];
 
     let attended = (percent/100) * total;
@@ -154,6 +175,8 @@ function calculate() {
     weightedTotal += total * weight;
     weightedAttended += attended * weight;
   }
+
+  if (weightedTotal === 0) return;
 
   let combined = (weightedAttended / weightedTotal) * 100;
   let required = 0.85 * weightedTotal;
@@ -173,8 +196,8 @@ function calculate() {
 
   box.innerHTML = `
     Combined Attendance: <b>${combined.toFixed(2)}%</b><br><br>
-    Weighted Margin: ${margin.toFixed(2)}<br><br>
-    Equivalent Safe Bunks:<br>
+    Margin Units: ${margin.toFixed(2)}<br><br>
+    You can still bunk approximately:<br>
     Lectures: ${safeLecture}<br>
     Practicals: ${safePractical}<br>
     Tutorials/Skills: ${safeTutorial}
