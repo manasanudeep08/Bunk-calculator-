@@ -336,8 +336,42 @@ function calculate(){
   let compCompleted=completed[subject]||{};
   let compTotal=totals[subject]||{};
 
-  let totalAttended=0,totalCompleted=0;
+  // ===== REMOVE 3 FROM EACH COMPONENT =====
+  Object.keys(compTotal).forEach(c=>{
+    compTotal[c]=Math.max(0,compTotal[c]-3);
+  });
+
+  // ===== REMOVE MARCH 6 & 7 =====
+  let festDates=["2026-03-06","2026-03-07"];
+  festDates.forEach(dateStr=>{
+    let festCount=countClasses(new Date(dateStr));
+    let beforeFest=countClasses(new Date(new Date(dateStr).getTime()-86400000));
+    let diff={};
+
+    Object.keys(festCount).forEach(sub=>{
+      if(!beforeFest[sub]) return;
+      Object.keys(festCount[sub]).forEach(c=>{
+        let removed=festCount[sub][c]-(beforeFest[sub][c]||0);
+        if(sub===subject && removed>0){
+          compTotal[c]=Math.max(0,compTotal[c]-removed);
+        }
+      });
+    });
+  });
+
+  // ===== WEIGHTS =====
+  const weights={L:1,T:0.25,P:0.5,S:0.25};
+
+  let weightedTotal=0;
+  Object.keys(compTotal).forEach(c=>{
+    weightedTotal+= (compTotal[c]||0)*weights[c];
+  });
+
+  let requiredWeighted=0.85*weightedTotal;
+  let maxWeightedLoss=weightedTotal-requiredWeighted;
+
   let stats="";
+  let totalAttended=0,totalCompleted=0;
 
   subjectComponents[subject].forEach(c=>{
 
@@ -354,26 +388,21 @@ function calculate(){
 
       let percent=compComp?(attended/compComp)*100:0;
 
-      let required = 0.85 * compTot;
-      let remaining = compTot - compComp;
+      // Max bunk for THIS component
+      let bunk=Math.floor(maxWeightedLoss/weights[c]);
 
-      let maxAllowed = Math.floor(
-        compTot - (attended / 0.85)
-      );
-
-      let safeFuture = Math.min(maxAllowed, remaining);
-      if(safeFuture < 0) safeFuture = 0;
+      if(bunk>compTot) bunk=compTot;
+      if(bunk<0) bunk=0;
 
       stats+=`
         <div>
           <b>${c}</b>: ${percent.toFixed(1)}% 
           (${attended}/${compComp})<br>
-          Safe Bunks: ${safeFuture}
+          Max Safe Bunks: ${bunk}
         </div><br>
       `;
 
     }else{
-
       stats+=`
         <div>
           <b>${c}</b>: 
@@ -388,7 +417,6 @@ function calculate(){
   let combined=totalCompleted?(totalAttended/totalCompleted)*100:0;
 
   animateProgress(combined);
-
   document.getElementById("componentStats").innerHTML=stats;
 }
 
