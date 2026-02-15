@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Attendance Pro</title>
+<title>Liquid Attendance</title>
 
 <style>
 *{
@@ -13,43 +13,55 @@
 
 body{
   margin:0;
-  min-height:100vh;
+  height:100vh;
   display:flex;
   justify-content:center;
   align-items:center;
   background:
-    radial-gradient(circle at 20% 30%, #6366f1 0%, transparent 40%),
-    radial-gradient(circle at 80% 70%, #8b5cf6 0%, transparent 40%),
+    radial-gradient(circle at 30% 30%, rgba(99,102,241,0.3), transparent 40%),
+    radial-gradient(circle at 70% 70%, rgba(139,92,246,0.25), transparent 40%),
     linear-gradient(135deg,#0f172a,#111827);
   color:white;
+  overflow:hidden;
 }
 
+/* Floating glass card */
 .card{
   width:95%;
-  max-width:600px;
-  padding:30px;
+  max-width:520px;
+  padding:32px;
   border-radius:28px;
   backdrop-filter:blur(40px);
   background:rgba(255,255,255,0.08);
   border:1px solid rgba(255,255,255,0.2);
-  box-shadow:0 40px 100px rgba(0,0,0,0.7);
+  box-shadow:
+    0 40px 100px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.2);
+  transition:transform 0.2s ease;
 }
 
+.card:hover{
+  border:1px solid rgba(255,255,255,0.35);
+}
+
+/* Headings */
 h1{
-  margin:0 0 10px 0;
+  margin:0 0 6px;
+  font-weight:600;
   text-align:center;
 }
 
 .subtitle{
   text-align:center;
-  opacity:0.7;
-  margin-bottom:20px;
+  opacity:0.6;
+  margin-bottom:22px;
 }
 
+/* Inputs */
 select,input{
   width:100%;
   padding:14px;
-  margin-bottom:12px;
+  margin-bottom:14px;
   border-radius:16px;
   border:none;
   background:rgba(255,255,255,0.1);
@@ -61,35 +73,64 @@ select,input{
 button{
   width:100%;
   padding:16px;
-  border-radius:18px;
+  border-radius:20px;
   border:none;
-  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  background:rgba(255,255,255,0.15);
+  backdrop-filter:blur(20px);
   color:white;
   font-weight:600;
-  font-size:15px;
   cursor:pointer;
   transition:0.2s ease;
 }
 
 button:hover{
-  transform:scale(1.03);
+  background:rgba(255,255,255,0.25);
+}
+
+/* Circular progress */
+.progress{
+  margin:30px auto 20px;
+  width:150px;
+  height:150px;
+  position:relative;
+}
+
+svg{
+  transform:rotate(-90deg);
+}
+
+circle{
+  fill:none;
+  stroke-width:12;
+  stroke-linecap:round;
+}
+
+.bg{
+  stroke:rgba(255,255,255,0.1);
+}
+
+.fg{
+  stroke:white;
+  stroke-dasharray:440;
+  stroke-dashoffset:440;
+  transition:stroke-dashoffset 1s ease;
+}
+
+.percent-text{
+  position:absolute;
+  inset:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:26px;
+  font-weight:600;
 }
 
 .result{
-  margin-top:20px;
-  padding:20px;
-  border-radius:20px;
-  background:rgba(255,255,255,0.1);
-  line-height:1.6;
-}
-
-.safe{ border:1px solid rgba(0,255,150,0.6); }
-.danger{ border:1px solid rgba(255,60,60,0.7); }
-
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
+  margin-top:10px;
+  font-size:14px;
+  opacity:0.8;
+  text-align:center;
 }
 </style>
 </head>
@@ -99,7 +140,7 @@ button:hover{
 <div class="card">
 
 <h1>Hello vro 👋</h1>
-<div class="subtitle">Smart Attendance Tracker</div>
+<div class="subtitle">Liquid Glass Attendance</div>
 
 <select id="subject">
   <option value="ds">Data Structures</option>
@@ -113,14 +154,17 @@ button:hover{
 
 <input type="date" id="selectedDate">
 
-<div class="grid">
-<input type="number" id="L" placeholder="Lectures Attended">
-<input type="number" id="P" placeholder="Practicals Attended">
-<input type="number" id="T" placeholder="Tutorials Attended">
-<input type="number" id="S" placeholder="Skills Attended">
-</div>
+<input type="number" id="attended" placeholder="Total Classes Attended">
 
 <button onclick="calculate()">Calculate</button>
+
+<div class="progress">
+<svg width="150" height="150">
+  <circle class="bg" cx="75" cy="75" r="70"/>
+  <circle class="fg" cx="75" cy="75" r="70"/>
+</svg>
+<div class="percent-text" id="percentText">0%</div>
+</div>
 
 <div class="result" id="result"></div>
 
@@ -128,170 +172,50 @@ button:hover{
 
 <script>
 
-const semesterStart = new Date("2025-12-22");
-const semesterEnd = new Date("2026-04-18");
+/* Subtle 3D tilt */
+document.addEventListener("mousemove",e=>{
+  const card=document.querySelector(".card");
+  const x=(window.innerWidth/2-e.clientX)/40;
+  const y=(window.innerHeight/2-e.clientY)/40;
+  card.style.transform=`rotateX(${y}deg) rotateY(${x}deg)`;
+});
 
-const holidays = [
-  "2026-01-12","2026-01-13","2026-01-14",
-  "2026-01-15","2026-01-16","2026-01-17",
-  "2026-03-19","2026-03-21",
-  "2026-03-27","2026-04-14"
-];
-
-function isHoliday(date){
-  return holidays.includes(date.toISOString().split("T")[0]);
-}
-
-function isExamWeek(date){
-  let start = new Date("2026-02-16");
-  let end = new Date("2026-02-21");
-  return date >= start && date <= end;
-}
-
-function getPeriods(day){
-
-  switch(day){
-
-    case 1: return [
-      {sub:"ds",comp:"S"},
-      {sub:"ds",comp:"S"},
-      {sub:"python",comp:"L"},
-      {sub:"python",comp:"L"},
-      {sub:"comm",comp:"P"},
-      {sub:"comm",comp:"P"}
-    ];
-
-    case 2: return [
-      {sub:"ds",comp:"S"},
-      {sub:"ds",comp:"S"},
-      null,null,
-      {sub:"comm",comp:"P"},
-      {sub:"comm",comp:"P"}
-    ];
-
-    case 3: return [
-      {sub:"iot",comp:"L"},
-      {sub:"iot",comp:"L"},
-      {sub:"ds",comp:"L"},
-      {sub:"ds",comp:"L"},
-      {sub:"dtw",comp:"P"},
-      {sub:"dtw",comp:"P"}
-    ];
-
-    case 4: return [
-      {sub:"iot",comp:"P"},
-      {sub:"iot",comp:"P"},
-      {sub:"la",comp:"S"},
-      {sub:"la",comp:"S"},
-      {sub:"dtw",comp:"P"},
-      {sub:"dtw",comp:"P"}
-    ];
-
-    case 5: return [
-      {sub:"la",comp:"T"},
-      {sub:"la",comp:"T"},
-      {sub:"ds",comp:"P"},
-      {sub:"ds",comp:"P"},
-      {sub:"coa",comp:"L"},
-      {sub:"coa",comp:"L"}
-    ];
-
-    case 6: return [
-      {sub:"coa",comp:"L"},
-      null,
-      {sub:"python",comp:"P"},
-      {sub:"python",comp:"P"},
-      {sub:"ds",comp:"L"},
-      null
-    ];
-
-    default: return [];
-  }
-}
-
-function countClasses(untilDate){
-
-  let counts = {};
-  let current = new Date(semesterStart);
-
-  while(current <= untilDate){
-
-    if(current.getDay() !== 0 && !isHoliday(current)){
-
-      let periods = getPeriods(current.getDay());
-
-      if(isExamWeek(current)){
-        periods = periods.slice(2);
-      }
-
-      periods.forEach(p=>{
-        if(!p) return;
-        if(!counts[p.sub]) counts[p.sub]={};
-        if(!counts[p.sub][p.comp]) counts[p.sub][p.comp]=0;
-        counts[p.sub][p.comp]++;
-      });
-    }
-
-    current.setDate(current.getDate()+1);
-  }
-
-  return counts;
-}
-
+/* Demo Calculation */
 function calculate(){
 
-  const subject = document.getElementById("subject").value;
-  const dateValue = document.getElementById("selectedDate").value;
+  let attended=parseInt(document.getElementById("attended").value)||0;
 
-  if(!dateValue){
-    document.getElementById("result").innerHTML="Select a date.";
-    return;
-  }
+  // Demo: assume total = 100 for clean visual test
+  let total=100;
 
-  let selectedDate = new Date(dateValue);
+  let percent=(attended/total)*100;
+  if(percent>100) percent=100;
 
-  if(selectedDate < semesterStart){
-    document.getElementById("result").innerHTML="Semester not started.";
-    return;
-  }
+  animateProgress(percent);
 
-  if(selectedDate > semesterEnd){
-    selectedDate = semesterEnd;
-  }
+  document.getElementById("result").innerHTML=
+    percent>=85?
+    "You are safe above 85%":
+    "Below 85%. Improve attendance.";
+}
 
-  let completed = countClasses(selectedDate);
-  let totals = countClasses(semesterEnd);
+function animateProgress(percent){
 
-  let compCompleted = completed[subject] || {};
-  let compTotal = totals[subject] || {};
+  let circle=document.querySelector(".fg");
+  let text=document.getElementById("percentText");
 
-  let output="";
-  let box=document.getElementById("result");
+  let offset=440-(440*(percent/100));
+  circle.style.strokeDashoffset=offset;
 
-  let overallSafe=true;
-
-  for(let comp in compTotal){
-
-    let attended=parseInt(document.getElementById(comp).value)||0;
-    let completedCount=compCompleted[comp]||0;
-    let totalCount=compTotal[comp];
-
-    let percent = completedCount ? (attended/completedCount)*100 : 0;
-    let required=0.85*totalCount;
-
-    let safeFuture=Math.floor((attended-required)+(totalCount-completedCount));
-
-    if(percent<85) overallSafe=false;
-
-    output+=`<b>${comp}</b><br>
-    Completed: ${completedCount}<br>
-    Total: ${totalCount}<br>
-    Current: ${percent.toFixed(2)}%<br>
-    Safe Future Bunks: ${safeFuture>0?safeFuture:0}<br><br>`;
-  }
-
-  box.className="result "+(overallSafe?"safe":"danger");
-  box.innerHTML=output;
+  let start=0;
+  let interval=setInterval(()=>{
+    if(start>=percent){
+      clearInterval(interval);
+    }else{
+      start++;
+      text.innerText=start+"%";
+    }
+  },10);
 }
 
 </script>
