@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Liquid Attendance</title>
+<title>Liquid Attendance Pro</title>
 
 <style>
 *{
@@ -14,62 +14,103 @@
 body{
   margin:0;
   height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  background:
-    radial-gradient(circle at 30% 30%, rgba(99,102,241,0.25), transparent 40%),
-    radial-gradient(circle at 70% 70%, rgba(139,92,246,0.2), transparent 40%),
-    linear-gradient(135deg,#0f172a,#111827);
+  overflow:hidden;
   color:white;
 }
 
-.card{
-  width:95%;
-  max-width:540px;
-  padding:32px;
-  border-radius:28px;
-  backdrop-filter:blur(40px);
-  background:rgba(255,255,255,0.08);
-  border:1px solid rgba(255,255,255,0.2);
-  box-shadow:0 40px 100px rgba(0,0,0,0.6);
+/* ===== VIDEO BACKGROUND ===== */
+video{
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) scale(1.15);
+  min-width:100%;
+  min-height:100%;
+  object-fit:cover;
+  z-index:-3;
+  filter:brightness(0.6) contrast(1.1) saturate(1.2);
 }
 
+/* Ambient dark layer */
+.overlay{
+  position:fixed;
+  inset:0;
+  background:linear-gradient(
+    135deg,
+    rgba(0,0,0,0.55),
+    rgba(10,10,20,0.7)
+  );
+  z-index:-2;
+}
+
+/* ===== GLASS CARD ===== */
+.card{
+  position:relative;
+  width:95%;
+  max-width:540px;
+  margin:auto;
+  top:50%;
+  transform:translateY(-50%);
+  padding:32px;
+  border-radius:30px;
+
+  backdrop-filter:blur(35px) saturate(140%);
+  -webkit-backdrop-filter:blur(35px) saturate(140%);
+
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.25);
+
+  box-shadow:
+    0 40px 100px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+/* Headings */
 h1{
-  margin:0 0 6px;
+  margin:0;
   text-align:center;
+  font-weight:600;
 }
 
 .subtitle{
   text-align:center;
-  opacity:0.6;
+  opacity:0.7;
   margin-bottom:20px;
 }
 
+/* Inputs */
 select,input{
   width:100%;
   padding:14px;
   margin-bottom:14px;
-  border-radius:16px;
+  border-radius:18px;
   border:none;
-  background:rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.12);
   color:white;
   outline:none;
 }
 
+/* Button */
 button{
   width:100%;
   padding:16px;
-  border-radius:20px;
+  border-radius:22px;
   border:none;
-  background:rgba(255,255,255,0.15);
+  background:rgba(255,255,255,0.18);
   color:white;
   font-weight:600;
   cursor:pointer;
+  backdrop-filter:blur(10px);
+  transition:0.2s;
 }
 
+button:hover{
+  background:rgba(255,255,255,0.28);
+}
+
+/* Progress Ring */
 .progress{
-  margin:25px auto;
+  margin:25px auto 15px;
   width:150px;
   height:150px;
   position:relative;
@@ -86,7 +127,7 @@ circle{
 }
 
 .bg{
-  stroke:rgba(255,255,255,0.1);
+  stroke:rgba(255,255,255,0.15);
 }
 
 .fg{
@@ -106,15 +147,24 @@ circle{
   font-weight:600;
 }
 
+/* Component Stats */
 .components{
-  margin-top:15px;
+  margin-top:8px;
   font-size:14px;
-  opacity:0.85;
+  opacity:0.9;
+  text-align:right;
+  line-height:1.6;
 }
 </style>
 </head>
 
 <body>
+
+<video autoplay muted loop>
+  <source src="bg.mp4" type="video/mp4">
+</video>
+
+<div class="overlay"></div>
 
 <div class="card">
 
@@ -152,7 +202,7 @@ circle{
 
 <script>
 
-/* ===== Timetable Engine ===== */
+/* ===== Engine ===== */
 
 const semesterStart = new Date("2025-12-22");
 const semesterEnd = new Date("2026-04-18");
@@ -248,8 +298,6 @@ function countClasses(untilDate){
   return counts;
 }
 
-/* ===== UI Logic ===== */
-
 const subjectComponents = {
   ds:["L","P","S"],
   python:["L","P"],
@@ -292,15 +340,49 @@ function calculate(){
   let stats="";
 
   subjectComponents[subject].forEach(c=>{
-    let attended=parseInt(document.getElementById(c).value)||0;
+
+    let input=document.getElementById(c);
     let compComp=compCompleted[c]||0;
+    let compTot=compTotal[c]||0;
 
-    totalAttended+=attended;
-    totalCompleted+=compComp;
+    if(input && input.value){
 
-    let percent=compComp?(attended/compComp)*100:0;
+      let attended=parseInt(input.value)||0;
 
-    stats+=`${c}: ${percent.toFixed(1)}% (${attended}/${compComp})<br>`;
+      totalAttended+=attended;
+      totalCompleted+=compComp;
+
+      let percent=compComp?(attended/compComp)*100:0;
+
+      let required = 0.85 * compTot;
+      let remaining = compTot - compComp;
+
+      let maxAllowed = Math.floor(
+        compTot - (attended / 0.85)
+      );
+
+      let safeFuture = Math.min(maxAllowed, remaining);
+      if(safeFuture < 0) safeFuture = 0;
+
+      stats+=`
+        <div>
+          <b>${c}</b>: ${percent.toFixed(1)}% 
+          (${attended}/${compComp})<br>
+          Safe Bunks: ${safeFuture}
+        </div><br>
+      `;
+
+    }else{
+
+      stats+=`
+        <div>
+          <b>${c}</b>: 
+          <span style="opacity:0.6">
+          Enter attendance
+          </span>
+        </div><br>
+      `;
+    }
   });
 
   let combined=totalCompleted?(totalAttended/totalCompleted)*100:0;
