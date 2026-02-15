@@ -3,26 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Attendance Pro</title>
+<title>Attendance Glass</title>
 
 <style>
+* {
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+}
+
 body {
   margin: 0;
-  background: #0f172a;
-  color: white;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
   display: flex;
   justify-content: center;
-  padding: 30px;
+  align-items: center;
+  min-height: 100vh;
+  color: white;
 }
 
 .card {
-  width: 100%;
-  max-width: 500px;
+  width: 95%;
+  max-width: 520px;
+  padding: 28px;
+  border-radius: 28px;
+  backdrop-filter: blur(30px);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 40px 100px rgba(0,0,0,0.6);
 }
 
 h1 {
   text-align: center;
+  font-weight: 600;
   margin-bottom: 20px;
 }
 
@@ -30,31 +42,49 @@ input {
   width: 100%;
   padding: 12px;
   margin-bottom: 10px;
-  border-radius: 10px;
+  border-radius: 14px;
   border: none;
-  background: #1e293b;
+  background: rgba(255,255,255,0.1);
   color: white;
+  font-size: 14px;
+  outline: none;
+}
+
+input::placeholder {
+  color: rgba(255,255,255,0.6);
 }
 
 button {
   width: 100%;
   padding: 14px;
-  border-radius: 12px;
+  border-radius: 16px;
   border: none;
-  background: #6366f1;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
   color: white;
   font-weight: 600;
+  font-size: 15px;
   cursor: pointer;
   margin-top: 10px;
+  transition: 0.2s ease;
+}
+
+button:hover {
+  transform: scale(1.03);
 }
 
 .result {
   margin-top: 20px;
-  background: #1e293b;
-  padding: 15px;
-  border-radius: 12px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.1);
   font-size: 14px;
+  line-height: 1.6;
+  transition: 0.3s ease;
 }
+
+.safe { border: 1px solid rgba(0,255,150,0.6); }
+.warn { border: 1px solid rgba(255,180,0,0.6); }
+.danger { border: 1px solid rgba(255,60,60,0.7); }
 </style>
 </head>
 
@@ -119,9 +149,8 @@ function calculate() {
     if (!percent) percent = 0;
 
     let totalClasses = totals[key];
-
-    let componentType = key.slice(-1); // L,P,T,S
-    let weight = weights[componentType];
+    let type = key.slice(-1);
+    let weight = weights[type];
 
     let attended = (percent/100) * totalClasses;
 
@@ -129,26 +158,32 @@ function calculate() {
     weightedAttended += attended * weight;
   }
 
-  let currentCombined = (weightedAttended / weightedTotal) * 100;
+  let combined = (weightedAttended / weightedTotal) * 100;
+  let required = 0.85 * weightedTotal;
+  let margin = weightedAttended - required;
 
-  let requiredWeighted = 0.85 * weightedTotal;
-  let margin = weightedAttended - requiredWeighted;
+  let safeLecture = Math.floor(margin / 1);
+  let safePractical = Math.floor(margin / 0.5);
+  let safeTutorial = Math.floor(margin / 0.25);
 
-  let safeLectureBunks = Math.floor(margin / 1);
-  let safePracticalBunks = Math.floor(margin / 0.5);
-  let safeTutorialBunks = Math.floor(margin / 0.25);
+  let box = document.getElementById("result");
 
-  document.getElementById("result").innerHTML = `
-    Current Combined: <b>${currentCombined.toFixed(2)}%</b><br><br>
-    You can lose weighted units: ${margin.toFixed(2)}<br><br>
-    Equivalent Safe Bunks:<br>
-    Lectures: ${safeLectureBunks}<br>
-    Practicals: ${safePracticalBunks}<br>
-    Tutorials/Skills: ${safeTutorialBunks}
+  let statusClass = "safe";
+  if (combined < 85) statusClass = "danger";
+  else if (combined < 88) statusClass = "warn";
+
+  box.className = "result " + statusClass;
+
+  box.innerHTML = `
+    Combined Attendance: <b>${combined.toFixed(2)}%</b><br><br>
+    Margin Units Left: ${margin.toFixed(2)}<br><br>
+    Safe Bunks Equivalent:<br>
+    Lectures: ${safeLecture}<br>
+    Practicals: ${safePractical}<br>
+    Tutorials/Skills: ${safeTutorial}
   `;
 }
 </script>
 
 </body>
 </html>
-
