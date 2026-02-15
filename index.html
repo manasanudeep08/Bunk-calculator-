@@ -1,176 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance Tracker</title>
+
+<style>
+body {
+  margin:0;
+  background:#0f172a;
+  color:white;
+  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+}
+
+.card{
+  width:95%;
+  max-width:600px;
+  padding:30px;
+  border-radius:20px;
+  background:rgba(255,255,255,0.08);
+  backdrop-filter:blur(30px);
+}
+
+input,select,button{
+  width:100%;
+  padding:12px;
+  margin:8px 0;
+  border-radius:12px;
+  border:none;
+  background:rgba(255,255,255,0.1);
+  color:white;
+}
+
+button{
+  background:#6366f1;
+  cursor:pointer;
+}
+
+.result{
+  margin-top:20px;
+  padding:15px;
+  background:rgba(255,255,255,0.1);
+  border-radius:12px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+<h2>Hello vro 👋</h2>
+
+<select id="subject">
+  <option value="ds">Data Structures</option>
+  <option value="python">Python</option>
+  <option value="la">Linear Algebra</option>
+  <option value="dtw">Design Tools</option>
+  <option value="coa">COA</option>
+  <option value="iot">IoT</option>
+  <option value="comm">Communication</option>
+</select>
+
+<input type="date" id="selectedDate">
+
+<input type="number" id="L" placeholder="Lectures Attended">
+<input type="number" id="P" placeholder="Practicals Attended">
+<input type="number" id="T" placeholder="Tutorials Attended">
+<input type="number" id="S" placeholder="Skills Attended">
+
+<button onclick="calculate()">Calculate</button>
+
+<div class="result" id="result"></div>
+
+</div>
+
 <script>
 
-const semesterStart = new Date("2025-12-22");
-const semesterEnd = new Date("2026-04-18");
-
-const holidays = [
-  "2026-01-12","2026-01-13","2026-01-14",
-  "2026-01-15","2026-01-16","2026-01-17",
-  "2026-03-19","2026-03-21",
-  "2026-03-27","2026-04-14"
-];
-
-function formatDate(d){
-  return d.toISOString().split("T")[0];
-}
-
-function isHoliday(date){
-  return holidays.includes(formatDate(date));
-}
-
-function isExamWeek(date){
-  let start = new Date("2026-02-16");
-  let end = new Date("2026-02-21");
-  return date >= start && date <= end;
-}
-
-function getPeriods(day){
-
-  switch(day){
-
-    case 1: return [
-      {sub:"ds",comp:"S"},
-      {sub:"ds",comp:"S"},
-      {sub:"python",comp:"L"},
-      {sub:"python",comp:"L"},
-      {sub:"comm",comp:"P"},
-      {sub:"comm",comp:"P"}
-    ];
-
-    case 2: return [
-      {sub:"ds",comp:"S"},
-      {sub:"ds",comp:"S"},
-      null,null,
-      {sub:"comm",comp:"P"},
-      {sub:"comm",comp:"P"}
-    ];
-
-    case 3: return [
-      {sub:"iot",comp:"L"},
-      {sub:"iot",comp:"L"},
-      {sub:"ds",comp:"L"},
-      {sub:"ds",comp:"L"},
-      {sub:"dtw",comp:"P"},
-      {sub:"dtw",comp:"P"}
-    ];
-
-    case 4: return [
-      {sub:"iot",comp:"P"},
-      {sub:"iot",comp:"P"},
-      {sub:"la",comp:"S"},
-      {sub:"la",comp:"S"},
-      {sub:"dtw",comp:"P"},
-      {sub:"dtw",comp:"P"}
-    ];
-
-    case 5: return [
-      {sub:"la",comp:"T"},
-      {sub:"la",comp:"T"},
-      {sub:"ds",comp:"P"},
-      {sub:"ds",comp:"P"},
-      {sub:"coa",comp:"L"},
-      {sub:"coa",comp:"L"}
-    ];
-
-    case 6: return [
-      {sub:"coa",comp:"L"},
-      null,
-      {sub:"python",comp:"P"},
-      {sub:"python",comp:"P"},
-      {sub:"ds",comp:"L"},
-      null
-    ];
-
-    default: return [];
-  }
-}
-
-function countClasses(untilDate){
-
-  let counts = {};
-  let current = new Date(semesterStart);
-
-  while(current <= untilDate){
-
-    if(current.getDay() !== 0 && !isHoliday(current)){
-
-      let periods = getPeriods(current.getDay()) || [];
-
-      if(isExamWeek(current)){
-        periods = periods.slice(2);
-      }
-
-      periods.forEach(p => {
-        if(!p) return;
-
-        if(!counts[p.sub]) counts[p.sub] = {};
-        if(!counts[p.sub][p.comp]) counts[p.sub][p.comp] = 0;
-
-        counts[p.sub][p.comp]++;
-      });
-    }
-
-    current.setDate(current.getDate()+1);
-  }
-
-  return counts;
-}
-
-function calculate(){
-
-  const subject = document.getElementById("subject").value;
-  const dateValue = document.getElementById("selectedDate").value;
-
-  if(!dateValue){
-    document.getElementById("result").innerHTML = "Please select a date.";
-    return;
-  }
-
-  let selectedDate = new Date(dateValue);
-
-  if(isNaN(selectedDate)){
-    document.getElementById("result").innerHTML = "Invalid date.";
-    return;
-  }
-
-  if(selectedDate < semesterStart){
-    document.getElementById("result").innerHTML = "Semester not started.";
-    return;
-  }
-
-  if(selectedDate > semesterEnd){
-    selectedDate = new Date(semesterEnd);
-  }
-
-  let completed = countClasses(selectedDate);
-  let totals = countClasses(semesterEnd);
-
-  let compCompleted = completed[subject] || {};
-  let compTotal = totals[subject] || {};
-
-  let output = "";
-
-  for(let comp in compTotal){
-
-    let attended = parseInt(document.getElementById(comp)?.value) || 0;
-    let completedCount = compCompleted[comp] || 0;
-    let totalCount = compTotal[comp];
-
-    let percent = completedCount ? (attended / completedCount) * 100 : 0;
-    let minRequired = 0.85 * totalCount;
-
-    let safeFutureBunks = Math.floor(
-      (attended - minRequired) + (totalCount - completedCount)
-    );
-
-    output += `<b>${comp}</b><br>
-    Completed: ${completedCount}<br>
-    Total Semester: ${totalCount}<br>
-    Current %: ${percent.toFixed(2)}%<br>
-    Safe Future Bunks: ${safeFutureBunks > 0 ? safeFutureBunks : 0}<br><br>`;
-  }
-
-  document.getElementById("result").innerHTML = output;
-}
+// simple test first to ensure JS runs
+console.log("JS loaded correctly");
 
 </script>
+
+</body>
+</html>
